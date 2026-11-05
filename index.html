@@ -2,638 +2,663 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Book & Quill</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Caveat:wght@400;600&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <style>
-  :root, [data-theme="light"] {
-    --bg: #F4F6F9; --paper: #FFFFFF; --ink: #1E293B; --ink-soft: #475569; --muted: #64748B;
-    --accent: #F08B6F; --accent-hover: #E07A5F; --danger: #EF4444; --danger-bg: #FEE2E2;
-    --border: #E2E8F0; --sidebar: #F8FAFC; --modal-bg: rgba(15,23,42,.4);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,.05); --shadow-md: 0 10px 25px -5px rgba(0,0,0,.05); --shadow-lg: 0 20px 40px -10px rgba(0,0,0,.1);
-  }
-  [data-theme="dark"] {
-    --bg: #1A181D; --paper: #201D24; --ink: #F0EAF5; --ink-soft: #D2CADB; --muted: #90879B;
-    --accent: #F08B6F; --accent-hover: #FFA68E; --danger: #F26B6B; --danger-bg: #382020;
-    --border: #3B3645; --sidebar: #18161B; --modal-bg: rgba(0,0,0,.6);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,.3); --shadow-md: 0 10px 25px -5px rgba(0,0,0,.4); --shadow-lg: 0 20px 40px -10px rgba(0,0,0,.6);
-  }
-  
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { 
-    background: var(--bg); font-family: 'Inter', sans-serif; color: var(--ink); 
-    display: flex; align-items: center; justify-content: center; 
-    min-height: 100vh; padding: 24px; transition: background 0.3s, color 0.3s;
-  }
+:root{
+  --bg:#F4F6F9;--paper:#FFFFFF;--panel:#F8FAFC;--ink:#1E293B;--soft:#475569;--muted:#64748B;
+  --accent:#F08B6F;--accent-strong:#E07A5F;--accent-text:#B4492E;--accent-ink:#FFFFFF;--accent-soft:#FDEAE4;--danger:#EF4444;--danger-soft:#FEE2E2;
+  --line:#E2E8F0;--shadow:0 20px 40px -12px rgba(15,23,42,.14);--ui:'Inter',system-ui,sans-serif;--serif:'Merriweather',Georgia,serif;
+}
+[data-theme="dark"]{
+  --bg:#1A181D;--paper:#201D24;--panel:#18161B;--ink:#F0EAF5;--soft:#D2CADB;--muted:#90879B;
+  --accent:#F08B6F;--accent-strong:#E07A5F;--accent-text:#F6A58F;--accent-ink:#FFFFFF;--accent-soft:#3A2B2D;--danger:#F26B6B;--danger-soft:#382020;
+  --line:#3B3645;--shadow:0 20px 40px -10px rgba(0,0,0,.6);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5;transition:background .25s,color .25s}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hidden{display:none!important}
 
-  /* MODAL */
-  .modal-overlay{position:fixed;inset:0;z-index:3000;background:var(--modal-bg);display:flex;align-items:center;justify-content:center;opacity:0;animation:modalFade .15s ease forwards;backdrop-filter:blur(4px);}
-  @keyframes modalFade{to{opacity:1}}
-  .modal{background:var(--paper);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);width:420px;max-width:90%;padding:28px;transform:translateY(10px);animation:modalRise .15s ease forwards;}
-  @keyframes modalRise{to{transform:translateY(0)}}
-  .modal h3{font-family:'Merriweather',serif;font-size:1.4rem;margin-bottom:8px;}
-  .modal p{color:var(--muted);font-size:0.9rem;margin-bottom:20px;line-height:1.5;}
-  .modal input{width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);font-size:1rem;outline:none;margin-bottom:24px;}
-  .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
-  .btn-modal{padding:10px 18px;border-radius:8px;border:1px solid transparent;cursor:pointer;font-weight:500;font-size:0.9rem;}
-  .btn-modal.cancel{background:transparent;color:var(--muted);border-color:var(--border);}
-  .btn-modal.cancel:hover{background:var(--sidebar);}
-  .btn-modal.ok{background:var(--accent);color:white;}
-  .btn-modal.ok:hover{background:var(--accent-hover);}
-  .btn-modal.danger{background:var(--danger);color:white;}
-  .btn-modal.danger:hover{background:#DC2626;}
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper);font-weight:500;font-size:.88rem;transition:background .15s,border-color .15s}
+.btn:hover{background:var(--panel);border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-strong);border-color:var(--accent-strong)}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{background:var(--danger-soft);border-color:var(--danger)}
+.btn.sm{padding:5px 10px;font-size:.8rem}
+.btn.ico{padding:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
-  /* LOGIN SCREEN */
-  #auth-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 1000; }
-  .auth-card { background: var(--paper); width: 400px; max-width: 100%; padding: 40px; border-radius: 16px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
-  .auth-card h1 { font-family: 'Merriweather', serif; font-size: 2rem; margin-bottom: 8px; text-align: center; }
-  .auth-card p { color: var(--muted); text-align: center; margin-bottom: 24px; font-size: 0.95rem; }
-  .auth-card input { width: 100%; padding: 12px; margin-bottom: 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 1rem; outline: none; background: var(--bg); color: var(--ink); }
-  .auth-card input:focus { border-color: var(--accent); }
-  .auth-card button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
-  .auth-card button:hover { background: var(--accent-hover); }
-  .auth-card button:disabled { opacity: 0.7; cursor: not-allowed; }
-  .auth-toggle { text-align: center; margin-top: 16px; font-size: 0.9rem; color: var(--muted); }
-  .auth-toggle span { color: var(--accent); cursor: pointer; font-weight: 500; }
+/* modal + toast */
+.overlay{position:fixed;inset:0;z-index:100;background:rgba(10,12,20,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);width:420px;max-width:100%;padding:26px}
+.modal h3{font-family:var(--serif);font-size:1.35rem;margin-bottom:6px}
+.modal p{color:var(--muted);margin-bottom:16px}
+.modal input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);margin-bottom:20px}
+.modal .row{display:flex;justify-content:flex-end;gap:10px}
+#toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.88rem;box-shadow:var(--shadow)}
+.toast.err{background:var(--danger);color:#fff}
 
-  /* APP LAYOUT */
-  #app-screen { display: none; width: 1380px; max-width: 100%; height: 94vh; background: var(--paper); border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden; flex-direction: column; border: 1px solid var(--border); }
-  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--border); background: var(--paper); }
-  .brand { font-family: 'Merriweather', serif; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
-  .user-info { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--muted); }
-  
-  .btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--paper); color: var(--ink); cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
-  .btn:hover { background: var(--sidebar); }
-  .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
-  .btn.primary:hover { background: var(--accent-hover); }
-  .btn.danger { color: var(--danger); border-color: var(--danger); background: var(--paper); }
-  .btn.danger:hover { background: var(--danger-bg); }
-  .btn.icon { padding: 8px; }
-  
-  /* LIBRARY */
-  .library { padding: 40px; overflow-y: auto; flex: 1; }
-  .tabs { display: flex; gap: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
-  .tab { padding: 12px 0; font-size: 1.1rem; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
-  .book-card { background: var(--paper); border: 1px solid var(--border); border-radius: 12px; padding: 24px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; position: relative; }
-  .book-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--accent); }
-  .book-card h3 { font-family: 'Merriweather', serif; font-size: 1.3rem; margin-bottom: 8px; padding-right: 30px; }
-  .book-card .author { font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; }
-  .book-card .meta { font-size: 0.8rem; color: var(--muted); margin-top: auto; }
-  .book-card .edit-btn { position: absolute; top: 20px; right: 20px; opacity: 0; transition: opacity 0.2s; }
-  .book-card:hover .edit-btn { opacity: 1; }
-  .empty { text-align: center; color: var(--muted); padding: 60px 20px; font-style: italic; }
+/* auth */
+#auth{min-height:100%;display:grid;grid-template-columns:1.1fr 1fr}
+.auth-hero{background:var(--accent);color:var(--accent-ink);padding:64px;display:flex;flex-direction:column;justify-content:flex-end;gap:16px}
+.auth-hero h1{font-family:var(--serif);font-size:clamp(2.6rem,5vw,4.2rem);line-height:1.05;font-weight:600}
+.auth-hero p{max-width:34ch;opacity:.85;font-size:1.05rem}
+.auth-form{display:flex;align-items:center;justify-content:center;padding:32px}
+.auth-card{width:360px;max-width:100%}
+.auth-card h2{font-family:var(--serif);font-size:1.8rem;margin-bottom:4px}
+.auth-card .sub{color:var(--muted);margin-bottom:24px}
+.auth-card label{display:block;font-size:.82rem;font-weight:500;margin-bottom:5px;color:var(--soft)}
+.auth-card input{width:100%;padding:11px 12px;margin-bottom:16px;border-radius:8px;border:1px solid var(--line);background:var(--paper)}
+.auth-card input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.auth-card .btn{width:100%;justify-content:center;padding:11px}
+.auth-switch{margin-top:16px;text-align:center;color:var(--muted);font-size:.88rem}
+.auth-switch button{background:none;border:none;color:var(--accent-text);font-weight:600}
+.credit{margin-top:36px;text-align:center;color:var(--muted);font-size:.8rem}
+@media(max-width:800px){#auth{grid-template-columns:1fr}.auth-hero{padding:32px;min-height:200px}}
 
-  /* EDITOR */
-  #editor-screen { display: none; flex: 1; flex-direction: row; overflow: hidden; position: relative; }
-  .sidebar { width: 300px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: margin-left 0.3s; flex-shrink: 0; }
-  .sidebar.hidden { margin-left: -300px; }
-  .search-box { padding: 16px; border-bottom: 1px solid var(--border); }
-  .search-box input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--paper); color: var(--ink); outline: none; }
-  .chapter-list { flex: 1; overflow-y: auto; padding: 12px; }
-  .chapter-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-bottom: 4px; }
-  .chapter-item:hover { background: var(--border); }
-  .chapter-item.active { background: var(--accent); color: white; }
-  .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+/* shell */
+#app{height:100dvh;display:flex;flex-direction:column}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 20px;background:var(--paper);border-bottom:1px solid var(--line);flex:none}
+.brand{font-family:var(--serif);font-weight:700;font-size:1.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-right{display:flex;align-items:center;gap:8px;min-width:0}
+.email{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+@media(max-width:700px){.email{display:none}}
 
-  .main-editor { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; min-width: 0; }
-  .toolbar { display: flex; gap: 4px; padding: 8px 24px; border-bottom: 1px solid var(--border); background: var(--paper); flex-wrap: wrap; align-items: center; min-height: 50px; }
-  .tbtn { background: none; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; color: var(--ink-soft); font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-  .tbtn:hover { background: var(--sidebar); }
-  .tbtn svg { width: 16px; height: 16px; }
-  .tselect { padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--paper); color: var(--ink); font-size: 0.9rem; outline: none; margin-right: 8px; cursor: pointer;}
-  
-  .editor-header { background: var(--paper); padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 16px;}
-  .editor-header input { font-family: 'Merriweather', serif; font-size: 1.8rem; border: none; outline: none; font-weight: 600; background: transparent; color: var(--ink); width: 100%; }
-  .save-status { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-  
-  .paper-container { flex: 1; overflow-y: auto; padding: 40px 0 100px; display: flex; justify-content: center; }
-  .paper { width: 100%; max-width: 780px; background: var(--paper); border-radius: 8px; padding: 70px 80px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); min-height: 800px; transition: max-width 0.3s; }
-  .editor-content { font-family: 'Merriweather', serif; font-size: 1.1rem; line-height: 1.9; outline: none; color: var(--ink); }
-  .editor-content h1 { font-size: 2rem; margin-bottom: 1rem; }
-  .editor-content p { margin-bottom: 1rem; }
-  .editor-content blockquote { border-left: 3px solid var(--accent); padding-left: 16px; color: var(--muted); font-style: italic; margin-bottom: 1rem; }
-  .theme-btn { background: none; border: none; cursor: pointer; color: var(--ink); padding: 8px; display: flex; align-items: center; justify-content: center; }
+/* library */
+#library{flex:1;overflow-y:auto;padding:36px clamp(16px,5vw,64px)}
+.lib-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:28px;max-width:1200px;margin-inline:auto}
+.tabs{display:flex;gap:4px;background:var(--panel);padding:4px;border-radius:10px;border:1px solid var(--line)}
+.tab{padding:7px 16px;border-radius:7px;border:none;background:none;color:var(--muted);font-weight:500}
+.tab.active{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px;max-width:1200px;margin-inline:auto}
+.book{position:relative;cursor:pointer;background:var(--paper);border:1px solid var(--line);border-left:8px solid var(--accent);border-radius:4px 10px 10px 4px;padding:22px 20px 16px;min-height:200px;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.book:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.book h3{font-family:var(--serif);font-size:1.3rem;line-height:1.25;margin-bottom:6px;overflow-wrap:anywhere}
+.book .by{color:var(--muted);font-size:.85rem}
+.book .meta{margin-top:auto;padding-top:14px;display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:.8rem}
+.book .acts{display:flex;gap:4px}
+.badge{font-size:.72rem;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:70px 16px}
+.empty b{display:block;font-family:var(--serif);font-size:1.3rem;color:var(--ink);margin-bottom:6px}
+
+/* editor */
+#editor{flex:1;display:flex;min-height:0;position:relative}
+.sidebar{width:290px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;transition:margin-left .25s}
+.sidebar.closed{margin-left:-290px}
+.side-top{padding:12px;display:flex;gap:8px;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+.search{padding:12px;border-bottom:1px solid var(--line)}
+.search input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper)}
+.chapters{flex:1;overflow-y:auto;padding:10px}
+.ch{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:.9rem;margin-bottom:2px}
+.ch:hover{background:var(--accent-soft)}
+.ch.active{background:var(--accent);color:var(--accent-ink)}
+.ch .n{opacity:.6;font-variant-numeric:tabular-nums;min-width:1.4em}
+.ch .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch .x{opacity:0;background:none;border:none;color:inherit;padding:2px;border-radius:4px}
+.ch:hover .x,.ch.active .x{opacity:.7}.ch .x:hover{opacity:1}
+.side-foot{padding:12px;border-top:1px solid var(--line);display:grid;gap:8px}
+.side-foot .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.side-foot .btn{justify-content:center}
+.side-foot label.btn{cursor:pointer}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:8px 16px;background:var(--paper);border-bottom:1px solid var(--line)}
+.tb{min-width:32px;height:32px;padding:0 8px;border:none;background:none;border-radius:6px;color:var(--soft);display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.tb:hover{background:var(--panel);color:var(--ink)}
+.sep{width:1px;height:20px;background:var(--line);margin:0 6px}
+.sel{height:32px;padding:0 8px;border-radius:6px;border:1px solid var(--line);background:var(--paper)}
+input[type=color]{width:32px;height:32px;padding:3px;border:1px solid var(--line);border-radius:6px;background:var(--paper);cursor:pointer}
+.ch-title{display:flex;align-items:center;gap:12px;padding:14px 24px;background:var(--paper);border-bottom:1px solid var(--line)}
+.ch-title input{flex:1;min-width:0;border:none;outline:none;background:none;font-family:var(--serif);font-size:1.7rem;font-weight:600}
+.status{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.status.bad{color:var(--danger)}
+.stage{flex:1;overflow:auto;padding:28px 16px 60px;background:var(--bg)}
+.paper{width:800px;max-width:100%;min-height:1040px;margin:0 auto;background:var(--paper);border:1px solid var(--line);border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:64px clamp(24px,8vw,84px)}
+.content{min-height:900px;outline:none;font-family:'Merriweather',serif;font-size:1.06rem;line-height:1.9;overflow-wrap:anywhere}
+.content[contenteditable=false]{cursor:default}
+.content:empty::before{content:'Start writing…';color:var(--muted)}
+.content h1{font-size:2rem;line-height:1.3;margin:0 0 1rem}
+.content h2{font-size:1.6rem;line-height:1.3;margin:0 0 .8rem}
+.content h3{font-size:1.3rem;line-height:1.3;margin:0 0 .6rem}
+.content p,.content div{margin-bottom:1rem}
+.content ul,.content ol{padding-left:1.7rem;margin-bottom:1rem}
+.content ul{list-style:disc}.content ol{list-style:decimal}
+.content li{margin-bottom:.25rem}
+.content blockquote{border-left:3px solid var(--accent);padding-left:16px;color:var(--muted);font-style:italic;margin-bottom:1rem}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 20px;background:var(--paper);border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+.stats{display:flex;gap:16px;font-variant-numeric:tabular-nums}
+.stats b{color:var(--soft)}
+.pager{display:flex;align-items:center;gap:6px}
+@media(max-width:800px){.sidebar{position:absolute;inset:0 auto 0 0;z-index:30;box-shadow:var(--shadow)}.ch-title input{font-size:1.3rem}}
+.ch{cursor:grab}
+.ch.dragging{opacity:.4}
+.ch.drop-before{box-shadow:0 -2px 0 var(--accent)}
+.ch.drop-after{box-shadow:0 2px 0 var(--accent)}
+#reader{flex:1;display:flex;flex-direction:column;min-height:0}
+.rd-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;min-height:0}
+.spread{display:flex;width:min(1080px,100%);height:min(100%,760px);background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);overflow:hidden}
+.leaf{flex:1;min-width:0;display:flex;flex-direction:column;padding:44px 52px 24px;background-color:var(--paper)}
+.leaf.left{background-image:linear-gradient(to left,rgba(0,0,0,.08),transparent 48px)}
+.leaf.right{background-image:linear-gradient(to right,rgba(0,0,0,.08),transparent 48px)}
+.leaf.cover{background:#1E293B;color:#F4F6F9;align-items:center;justify-content:center;text-align:center;gap:14px}
+.leaf.cover h1{font-family:var(--serif);font-size:clamp(1.6rem,3vw,2.4rem);line-height:1.25;overflow-wrap:anywhere}
+.leaf.cover p{opacity:.75}
+.cv-rule{width:56px;height:3px;background:#F08B6F;border-radius:2px}
+.run{text-align:center;font-size:.75rem;color:var(--muted);font-style:italic;margin-bottom:14px}
+.leaf-body{flex:1;overflow-y:auto;min-height:0}
+.read{font-family:'Merriweather',serif;font-size:1rem;line-height:1.85;overflow-wrap:anywhere}
+.read h1{font-size:1.8rem;line-height:1.3;margin-bottom:1rem}.read h2{font-size:1.5rem;line-height:1.3;margin-bottom:.8rem}.read h3{font-size:1.2rem;line-height:1.3;margin-bottom:.6rem}
+.read p,.read div{margin-bottom:1rem}
+.read ul,.read ol{padding-left:1.7rem;margin-bottom:1rem}.read ul{list-style:disc}.read ol{list-style:decimal}
+.read blockquote{border-left:3px solid var(--accent);padding-left:16px;color:var(--muted);font-style:italic;margin-bottom:1rem}
+.read h2.chtitle{font-family:var(--serif);font-size:1.6rem;margin:12px 0 22px;padding-bottom:14px;border-bottom:2px solid var(--accent)}
+.num{text-align:center;color:var(--muted);font-size:.8rem;padding-top:10px}
+.rd-bar{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:var(--paper);border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+@media(max-width:899px){.leaf{padding:30px 26px 18px}.rd-stage{padding:12px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
-<body data-theme="light">
+<body>
+<div id="toasts"></div>
+<div id="modal"></div>
 
-<div id="modal-container"></div>
-
-<!-- LOGIN SCREEN -->
-<div id="auth-screen">
-  <div class="auth-card">
-    <h1>Book & Quill</h1>
-    <p id="auth-sub">Sign in to your account</p>
-    <input type="email" id="auth-email" placeholder="Email address">
-    <input type="password" id="auth-pass" placeholder="Password">
-    <button id="auth-btn">Sign In</button>
-    <div class="auth-toggle">
-      <span id="auth-switch">Need an account? Sign up</span>
+<!-- AUTH -->
+<div id="auth">
+  <div class="auth-hero">
+    <h1>Book &amp; Quill</h1>
+    <p>A quiet place to write chapters, keep them safe, and share the finished book.</p>
+  </div>
+  <div class="auth-form">
+    <div class="auth-card">
+      <h2 id="auth-title">Welcome back</h2>
+      <p class="sub" id="auth-sub">Sign in to keep writing.</p>
+      <label for="auth-email">Email</label>
+      <input type="email" id="auth-email" autocomplete="email">
+      <label for="auth-pass">Password</label>
+      <input type="password" id="auth-pass" autocomplete="current-password">
+      <button class="btn primary" id="auth-btn">Sign in</button>
+      <div class="auth-switch"><span id="auth-q">New here?</span> <button id="auth-switch">Create an account</button></div>
+      <div class="credit">Created by Mihul Goel</div>
     </div>
   </div>
 </div>
 
-<!-- MAIN APP -->
-<div id="app-screen">
-  <div class="topbar" id="main-topbar">
-    <div class="brand">Book & Quill</div>
-    <div class="user-info" id="topbar-controls"></div>
-  </div>
-  <div class="library" id="library-screen"></div>
-  <div id="editor-screen"></div>
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="topbar" id="topbar"></div>
+  <div id="library" class="hidden"></div>
+  <div id="editor" class="hidden"></div>
+  <div id="reader" class="hidden"></div>
 </div>
 
 <script>
-// ==========================================
-// 1. SETUP & UTILS
-// ==========================================
-const SUPABASE_URL = 'https://gaslgwygpqrtoxvzotsu.supabase.co'.trim();
-const SUPABASE_KEY = 'sb_publishable_IDdZy1d0hQGT0G9U1ibldw_rHI4D60G'.trim();
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+/* ============ SETUP ============ */
+const SUPABASE_URL='https://gaslgwygpqrtoxvzotsu.supabase.co';
+const SUPABASE_KEY='sb_publishable_IDdZy1d0hQGT0G9U1ibldw_rHI4D60G';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let currentUser = null;
-let isLoginMode = true;
-let currentTab = 'private';
-let activeBook = null;
-let activeChapterId = null;
-let isReadOnly = false;
-let saveTimer = null;
-let sidebarHidden = false;
+let R={active:false};
+const S={user:null,tab:'private',book:null,chId:null,page:0,ro:false,timer:null,dirty:false,sel:null,sidebar:true,login:true};
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clean=h=>DOMPurify.sanitize(h||'');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const ic=p=>`<svg class="i" viewBox="0 0 24 24">${p}</svg>`;
+const I={
+  side:ic('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>'),
+  full:ic('<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>'),
+  sun:ic('<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  moon:ic('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+  edit:ic('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  trash:ic('<path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/>'),
+  x:ic('<path d="M18 6 6 18M6 6l12 12"/>'),
+  l:ic('<path d="M17 10H3M21 6H3M21 14H3M17 18H3"/>'),
+  c:ic('<path d="M18 10H6M21 6H3M21 14H3M18 18H6"/>'),
+  r:ic('<path d="M21 10H7M21 6H3M21 14H3M21 18H7"/>'),
+  ul:ic('<path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>'),
+  ol:ic('<path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M4 14h2l-2 4h2"/>'),
+  clear:ic('<path d="M4 7V4h16v3M9 20h6M12 4v16M3 3l18 18"/>'),
+  left:ic('<path d="m15 18-6-6 6-6"/>'),right:ic('<path d="m9 18 6-6-6-6"/>')
+};
 
-// Custom Modal
-function showModal({ title, desc, inputVal, okText, isDanger, onOk }) {
-  const container = document.getElementById('modal-container');
-  container.innerHTML = `
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modal">
-        <h3>${title}</h3>
-        ${desc ? `<p>${desc}</p>` : ''}
-        ${inputVal !== undefined ? `<input type="text" id="modalInput" value="${inputVal}">` : ''}
-        <div class="modal-actions">
-          <button class="btn-modal cancel" id="modalCancel">Cancel</button>
-          <button class="btn-modal ${isDanger ? 'danger' : 'ok'}" id="modalOk">${okText || 'OK'}</button>
-        </div>
-      </div>
-    </div>`;
-  
-  const input = document.getElementById('modalInput');
-  if (input) setTimeout(() => { input.focus(); input.select(); }, 50);
-  
-  const close = () => container.innerHTML = '';
-  const confirm = () => {
-    const val = input ? input.value : null;
-    if (onOk && onOk(val) === false) return;
-    close();
-  };
+function toast(msg,err){const t=document.createElement('div');t.className='toast'+(err?' err':'');t.textContent=msg;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),3200)}
 
-  document.getElementById('modalCancel').onclick = close;
-  document.getElementById('modalOk').onclick = confirm;
-  
-  container.querySelector('.modal').addEventListener('keydown', (e) => {
-    if(e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); confirm(); }
-    if(e.key === 'Escape') { e.preventDefault(); close(); }
-  });
+function modal({title,desc,input,okText='OK',danger,onOk}){
+  const m=$('#modal');
+  m.innerHTML=`<div class="overlay"><div class="modal" role="dialog" aria-modal="true"><h3></h3>${desc?'<p></p>':''}${input!==undefined?'<input type="text" id="m-in">':''}<div class="row"><button class="btn" id="m-cancel">Cancel</button><button class="btn ${danger?'danger':'primary'}" id="m-ok"></button></div></div></div>`;
+  $('h3',m).textContent=title; if(desc)$('p',m).textContent=desc; $('#m-ok',m).textContent=okText;
+  const inp=$('#m-in',m); if(inp){inp.value=input;setTimeout(()=>{inp.focus();inp.select()},30)} else setTimeout(()=>$('#m-ok',m).focus(),30);
+  const close=()=>{m.innerHTML=''};
+  const ok=async()=>{const r=await onOk?.(inp?inp.value.trim():null);if(r!==false)close()};
+  $('#m-cancel',m).onclick=close;$('#m-ok',m).onclick=ok;
+  $('.overlay',m).addEventListener('mousedown',e=>{if(e.target.classList.contains('overlay'))close()});
+  $('.modal',m).addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='BUTTON'){e.preventDefault();ok()}if(e.key==='Escape')close()});
 }
 
-// Theme
-function toggleTheme() {
-  const current = document.body.getAttribute('data-theme');
-  const next = current === 'light' ? 'dark' : 'light';
-  document.body.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-  updateThemeIcon(next);
-}
-function updateThemeIcon(theme) {
-  const icon = document.getElementById('theme-icon');
-  if(!icon) return;
-  if(theme === 'dark') icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-  else icon.innerHTML = '<circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
-}
-const savedTheme = localStorage.getItem('theme') || 'light';
-document.body.setAttribute('data-theme', savedTheme);
-updateThemeIcon(savedTheme);
+/* theme */
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('bq-theme',t)}
+setTheme(localStorage.getItem('bq-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+const themeIcon=()=>document.documentElement.getAttribute('data-theme')==='dark'?I.sun:I.moon;
 
-// ==========================================
-// 2. AUTHENTICATION
-// ==========================================
-const authBtn = document.getElementById('auth-btn');
-const authSwitch = document.getElementById('auth-switch');
-const authPass = document.getElementById('auth-pass');
+/* ============ AUTH ============ */
+function paintAuth(){
+  $('#auth-title').textContent=S.login?'Welcome back':'Create your account';
+  $('#auth-sub').textContent=S.login?'Sign in to keep writing.':'It takes a minute. Your books stay private until you publish.';
+  $('#auth-btn').textContent=S.login?'Sign in':'Create account';
+  $('#auth-q').textContent=S.login?'New here?':'Already registered?';
+  $('#auth-switch').textContent=S.login?'Create an account':'Sign in';
+  $('#auth-pass').autocomplete=S.login?'current-password':'new-password';
+}
+$('#auth-switch').onclick=()=>{S.login=!S.login;paintAuth()};
+async function handleAuth(){
+  const email=$('#auth-email').value.trim(),password=$('#auth-pass').value,btn=$('#auth-btn');
+  if(!email||!password)return toast('Enter your email and password.',true);
+  if(!S.login&&password.length<6)return toast('Use a password with at least 6 characters.',true);
+  btn.disabled=true;const label=btn.textContent;btn.textContent='Please wait…';
+  try{
+    if(S.login){const {error}=await db.auth.signInWithPassword({email,password});if(error)throw error}
+    else{
+      const {data,error}=await db.auth.signUp({email,password});if(error)throw error;
+      if(!data.session){toast('Account created. Check your email to confirm, then sign in.');S.login=true;paintAuth()}
+    }
+  }catch(e){toast(e.message,true)}
+  btn.disabled=false;btn.textContent=label==='Please wait…'?(S.login?'Sign in':'Create account'):label;
+}
+$('#auth-btn').onclick=handleAuth;
+$('#auth-pass').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();handleAuth()}});
 
-authSwitch.addEventListener('click', () => {
-  isLoginMode = !isLoginMode;
-  document.getElementById('auth-sub').textContent = isLoginMode ? 'Sign in to your account' : 'Create a new account';
-  authBtn.textContent = isLoginMode ? 'Sign In' : 'Sign Up';
-  authSwitch.textContent = isLoginMode ? 'Need an account? Sign up' : 'Already have an account? Sign in';
+db.auth.onAuthStateChange((ev,session)=>{
+  setTimeout(()=>{  // avoid calling supabase inside the callback
+    if(session){
+      if(S.user?.id===session.user.id){S.user=session.user;return}   // token refresh: stay where you are
+      S.user=session.user;$('#auth').classList.add('hidden');$('#app').classList.remove('hidden');showLibrary('private');
+    }else{
+      S.user=null;S.book=null;R.active=false;clearTimeout(S.timer);S.timer=null;
+      $('#app').classList.add('hidden');$('#auth').classList.remove('hidden');
+    }
+  },0);
 });
 
-async function handleAuth() {
-  const email = document.getElementById('auth-email').value.trim();
-  const password = authPass.value;
-  if(!email || !password) return showModal({title: 'Error', desc: 'Please enter email and password', okText: 'OK'});
-  
-  authBtn.textContent = 'Please wait...'; 
-  authBtn.disabled = true;
-
-  try {
-    if (isLoginMode) {
-      const { error } = await db.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    } else {
-      const { error } = await db.auth.signUp({ email, password });
-      if (error) throw error;
-      showModal({title: 'Success', desc: 'Account created! You can now log in.', okText: 'OK'});
-      isLoginMode = true;
-      authBtn.textContent = 'Sign In';
-      authSwitch.textContent = 'Need an account? Sign up';
-      document.getElementById('auth-sub').textContent = 'Sign in to your account';
-    }
-  } catch (err) {
-    showModal({title: 'Authentication Error', desc: err.message, okText: 'Try Again'});
-  } finally {
-    if(isLoginMode) authBtn.textContent = 'Sign In';
-    authBtn.disabled = false;
-  }
+/* ============ TOPBAR ============ */
+function topbar(mode){
+  const tb=$('#topbar'),ed=mode===true,rd=mode==='read';
+  tb.innerHTML=`<div class="brand">${ed?esc(S.book.title):rd?esc(R.book.title):'Book &amp; Quill'}</div>
+  <div class="top-right">
+    ${ed?`<button class="btn" data-act="readfrom">Read</button><button class="btn ico" data-act="sidebar" title="Toggle chapters" aria-label="Toggle chapters">${I.side}</button><button class="btn ico" data-act="full" title="Fullscreen" aria-label="Fullscreen">${I.full}</button>`:rd?'':`<span class="email">${esc(S.user.email)}</span>`}
+    <button class="btn ico" data-act="theme" title="Switch theme" aria-label="Switch theme">${themeIcon()}</button>
+    ${rd?'<button class="btn" data-act="closereader">Close book</button>':'<button class="btn" data-act="logout">Log out</button>'}
+  </div>`;
 }
 
-authBtn.addEventListener('click', handleAuth);
-authPass.addEventListener('keydown', (e) => { if(e.key === 'Enter') { e.preventDefault(); handleAuth(); } });
+/* ============ LIBRARY ============ */
+async function showLibrary(tab=S.tab){
+  await flush();
+  S.tab=tab;S.book=null;
+  showView('library');
+  topbar(false);
+  const lib=$('#library');lib.innerHTML='<div class="empty">Loading books…</div>';
+  let q=db.from('books').select('id,user_id,author_email,title,chapters,is_published,created_at');
+  q=tab==='private'?q.eq('user_id',S.user.id):q.eq('is_published',true);
+  const {data:books,error}=await q.order('created_at',{ascending:false});
+  if(S.tab!==tab||S.book)return;
+  if(error){lib.innerHTML=`<div class="empty"><b>Couldn't load books</b>${esc(error.message)}</div>`;return}
+  const mine=tab==='private';
+  const cards=books.length?books.map(b=>`
+    <div class="book" tabindex="0" data-act="${mine?'open':'read'}" data-id="${esc(b.id)}">
+      <h3>${esc(b.title)}</h3>
+      <div class="by">${mine?'Your book':'By '+esc(b.author_email||'Unknown')}</div>
+      <div class="meta"><span>${(b.chapters||[]).length} chapter${(b.chapters||[]).length===1?'':'s'}${mine&&b.is_published?' <span class="badge">Public</span>':''}</span>
+      ${mine?`<span class="acts"><button class="btn sm" data-act="read" data-id="${esc(b.id)}">Read</button><button class="btn ico sm" data-act="rename" data-id="${esc(b.id)}" data-title="${esc(b.title)}" title="Rename" aria-label="Rename">${I.edit}</button><button class="btn ico sm danger" data-act="delbook" data-id="${esc(b.id)}" data-title="${esc(b.title)}" title="Delete" aria-label="Delete">${I.trash}</button></span>`:''}</div>
+    </div>`).join(''):`<div class="empty"><b>${mine?'No books yet':'Nothing published yet'}</b>${mine?'Create your first book to start writing.':'Published books from every writer will appear here.'}</div>`;
+  lib.innerHTML=`<div class="lib-head">
+    <div class="tabs"><button class="tab ${mine?'active':''}" data-act="tab" data-tab="private">My books</button><button class="tab ${mine?'':'active'}" data-act="tab" data-tab="public">Public library</button></div>
+    ${mine?'<button class="btn primary" data-act="newbook">New book</button>':''}</div>
+    <div class="grid">${cards}</div>`;
+}
 
-db.auth.onAuthStateChange((event, session) => {
-  if (session) {
-    currentUser = session.user;
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'flex';
+function newBook(){
+  modal({title:'New book',input:'Untitled book',okText:'Create',onOk:async t=>{
+    if(!t)return false;
+    const {data,error}=await db.from('books').insert({user_id:S.user.id,author_email:S.user.email,title:t,is_published:false,
+      chapters:[{id:uid(),title:'Chapter 1',position:0,pages:[{contentHTML:''}]}]}).select().single();
+    if(error){toast(error.message,true);return false}
+    openBook(data.id);
+  }});
+}
+function renameBook(id,old){
+  modal({title:'Rename book',input:old,okText:'Save',onOk:async t=>{
+    if(!t)return false;if(t===old)return;
+    const {error}=await db.from('books').update({title:t}).eq('id',id);
+    if(error){toast(error.message,true);return false}
     showLibrary('private');
-  } else {
-    currentUser = null;
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('app-screen').style.display = 'none';
-  }
-});
-
-// ==========================================
-// 3. LIBRARY LOGIC
-// ==========================================
-async function showLibrary(tab) {
-  currentTab = tab;
-  document.getElementById('library-screen').style.display = 'block';
-  document.getElementById('editor-screen').style.display = 'none';
-  
-  document.getElementById('main-topbar').innerHTML = `
-    <div class="brand">Book & Quill</div>
-    <div class="user-info" id="topbar-controls">
-      <button class="theme-btn" onclick="toggleTheme()" title="Toggle Theme">
-        <svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
-      </button>
-      <span>${currentUser.email}</span>
-      <button class="btn" id="logoutBtn">Log out</button>
-    </div>
-  `;
-  updateThemeIcon(document.body.getAttribute('data-theme'));
-  document.getElementById('logoutBtn').addEventListener('click', () => db.auth.signOut());
-
-  const lib = document.getElementById('library-screen');
-  lib.innerHTML = `<div class="empty">Loading...</div>`;
-
-  let query = db.from('books').select('*');
-  if (tab === 'private') query = query.eq('user_id', currentUser.id);
-  else query = query.eq('is_published', true);
-
-  const { data: books, error } = await query.order('created_at', { ascending: false });
-  if (error) return lib.innerHTML = `<div class="empty">Error: ${error.message}</div>`;
-
-  const cards = books.length === 0 ? `<div class="empty">No books found here.</div>` : books.map(b => `
-    <div class="book-card" onclick="openBook('${b.id}')">
-      ${tab === 'private' ? `<button class="btn icon edit-btn" onclick="renameBook(event, '${b.id}', '${b.title.replace(/'/g, "\\'")}')">✎</button>` : ''}
-      <h3>${b.title}</h3>
-      <div class="author">${tab === 'public' ? 'By ' + (b.author_email || 'Unknown') : 'Your Book'}</div>
-      <div class="meta">${b.chapters.length} chapters</div>
-      ${tab === 'private' ? `<button class="btn danger" style="margin-top:12px; align-self:flex-start;" onclick="deleteBook(event, '${b.id}')">Delete</button>` : ''}
-    </div>
-  `).join('');
-
-  lib.innerHTML = `
-    <div class="tabs">
-      <div class="tab ${tab==='private'?'active':''}" onclick="showLibrary('private')">My Books</div>
-      <div class="tab ${tab==='public'?'active':''}" onclick="showLibrary('public')">Public Library</div>
-    </div>
-    ${tab === 'private' ? `<button class="btn primary" style="margin-bottom:24px;" onclick="createBook()">+ Create New Book</button>` : ''}
-    <div class="book-grid">${cards}</div>
-  `;
+  }});
+}
+function deleteBook(id,title){
+  modal({title:'Delete book',desc:`"${title}" and all its chapters will be permanently deleted.`,okText:'Delete book',danger:true,onOk:async()=>{
+    const {error}=await db.from('books').delete().eq('id',id);
+    if(error){toast(error.message,true);return false}
+    showLibrary('private');
+  }});
 }
 
-function createBook() {
-  showModal({
-    title: 'Create New Book', inputVal: 'Untitled Book', okText: 'Create',
-    onOk: async (val) => {
-      if(!val) return false;
-      const { data, error } = await db.from('books').insert({
-        user_id: currentUser.id, author_email: currentUser.email,
-        title: val, chapters: [{ id: Date.now().toString(), title: 'Chapter 1', contentHTML: '' }],
-        is_published: false
-      }).select().single();
-      if (error) return showModal({title: 'Error', desc: error.message, okText: 'OK'});
-      openBook(data.id);
-    }
-  });
+/* ============ EDITOR ============ */
+function normalize(book){
+  if(!Array.isArray(book.chapters)||!book.chapters.length)book.chapters=[{id:uid(),title:'Chapter 1',pages:[{contentHTML:''}]}];
+  book.chapters=book.chapters.map((c,i)=>({...c,id:String(c.id||uid()),_i:i}))
+    .sort((a,b)=>(a.position??a._i)-(b.position??b._i));
+  book.chapters.forEach((c,i)=>{delete c._i;c.position=i;
+    if(!Array.isArray(c.pages)||!c.pages.length)c.pages=[{contentHTML:c.contentHTML||''}];});
 }
+const ch=()=>S.book?.chapters.find(c=>c.id===S.chId);
 
-function renameBook(e, id, oldTitle) {
-  e.stopPropagation();
-  showModal({
-    title: 'Rename Book', inputVal: oldTitle, okText: 'Save',
-    onOk: async (val) => {
-      if (!val || val === oldTitle) return;
-      await db.from('books').update({ title: val }).eq('id', id);
-      showLibrary('private');
-    }
-  });
-}
-
-function deleteBook(e, id) {
-  e.stopPropagation();
-  showModal({
-    title: 'Delete Book', desc: 'Are you sure? This cannot be undone.', okText: 'Delete', isDanger: true,
-    onOk: async () => {
-      await db.from('books').delete().eq('id', id);
-      showLibrary('private');
-    }
-  });
-}
-
-// ==========================================
-// 4. EDITOR LOGIC (Strict Permissions)
-// ==========================================
-async function openBook(id) {
-  const { data, error } = await db.from('books').select('*').eq('id', id).single();
-  if (error) return showModal({title: 'Error', desc: error.message, okText: 'OK'});
-  
-  activeBook = data;
-  activeChapterId = data.chapters[0]?.id;
-  
-  // STRICT PERMISSION CHECK
-  isReadOnly = activeBook.user_id !== currentUser.id;
-  
-  document.getElementById('library-screen').style.display = 'none';
-  document.getElementById('editor-screen').style.display = 'flex';
+async function openBook(id){
+  const {data,error}=await db.from('books').select('*').eq('id',id).single();
+  if(error)return toast(error.message,true);
+  S.book=data;normalize(S.book);
+  S.chId=S.book.chapters[0].id;S.page=0;S.ro=S.book.user_id!==S.user.id;
+  S.sidebar=innerWidth>800;
+  showView('editor');
   renderEditor();
 }
 
-function renderEditor() {
-  const ed = document.getElementById('editor-screen');
-  const chapters = activeBook.chapters.sort((a,b) => a.position - b.position);
-  const ch = chapters.find(c => c.id === activeChapterId);
+function tbtn(cmd,icon,title){return `<button class="tb" data-act="cmd" data-cmd="${cmd}" title="${title}" aria-label="${title}">${icon}</button>`}
 
-  document.getElementById('main-topbar').innerHTML = `
-    <div class="brand" style="font-size: 1.1rem; color: var(--muted);">📖 ${activeBook.title}</div>
-    <div class="user-info" id="topbar-controls">
-      <button class="btn icon" onclick="toggleSidebar()" title="Toggle Sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
-      </button>
-      <button class="btn icon" onclick="toggleFullscreen()" title="Fullscreen">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-      </button>
-      <button class="theme-btn" onclick="toggleTheme()" title="Toggle Theme">
-        <svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
-      </button>
-      <button class="btn" id="logoutBtn">Log out</button>
-    </div>
-  `;
-  updateThemeIcon(document.body.getAttribute('data-theme'));
-  document.getElementById('logoutBtn').addEventListener('click', () => db.auth.signOut());
-
-  const chapterList = chapters.map((c, i) => `
-    <div class="chapter-item ${c.id === activeChapterId ? 'active' : ''}" onclick="selectChapter('${c.id}')">
-      <span>${i+1}. ${c.title || 'Untitled'}</span>
-    </div>
-  `).join('');
-
-  ed.innerHTML = `
-    <div class="sidebar ${sidebarHidden ? 'hidden' : ''}" id="sidebar">
-      <div style="padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;">
-        <button class="btn" onclick="showLibrary('${isReadOnly ? 'public' : 'private'}')">← Back</button>
-        ${!isReadOnly ? `<button class="btn" onclick="togglePublish()">${activeBook.is_published ? 'Unpublish' : 'Publish'}</button>` : `<span style="font-size:0.8rem; color:var(--muted); padding:8px;">Read Only</span>`}
-      </div>
-      <div class="search-box">
-        <input type="text" placeholder="Search text..." oninput="searchText(this.value)">
-      </div>
-      <div class="chapter-list" id="chapter-list">${chapterList}</div>
-      ${!isReadOnly ? `
-      <div class="sidebar-footer">
-        <button class="btn" style="width:100%;" onclick="addChapter()">+ Add Chapter</button>
-        <div style="display:flex; gap:8px;">
-          <button class="btn" style="flex:1;" onclick="exportJSON()">⬇ JSON</button>
-          <button class="btn" style="flex:1;" onclick="exportPDF()">⬇ PDF</button>
-        </div>
-        <label class="btn" style="text-align:center; cursor:pointer;">
-          ⬆ Import <input type="file" accept=".json" style="display:none;" onchange="importJSON(event)">
-        </label>
-      </div>` : ''}
-    </div>
-    
-    <div class="main-editor">
-      ${!isReadOnly ? `
-      <div class="toolbar">
-        <select class="tselect" onchange="execCmd('formatBlock', this.value); this.value='';">
-          <option value="p">Body</option>
-          <option value="h1">Heading 1</option>
-          <option value="h2">Heading 2</option>
-          <option value="h3">Heading 3</option>
-          <option value="blockquote">Quote</option>
-        </select>
-        <button class="tbtn" onclick="execCmd('bold')" title="Bold">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
-        </button>
-        <button class="tbtn" onclick="execCmd('italic')" title="Italic">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
-        </button>
-        <button class="tbtn" onclick="execCmd('underline')" title="Underline">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
-        </button>
-        <div style="width:1px; background:var(--border); margin:0 8px; height:20px;"></div>
-        <select class="tselect" onchange="execCmd(this.value); this.value='';">
-          <option value="">Lists</option>
-          <option value="insertUnorderedList">Bullets</option>
-          <option value="insertOrderedList">Numbers</option>
-        </select>
-        <button class="tbtn" onclick="execCmd('justifyLeft')" title="Align Left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
-        </button>
-        <button class="tbtn" onclick="execCmd('justifyCenter')" title="Align Center">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
-        </button>
-        <button class="tbtn" onclick="execCmd('justifyRight')" title="Align Right">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
-        </button>
-        <div style="width:1px; background:var(--border); margin:0 8px; height:20px;"></div>
-        <select class="tselect" onchange="changeFont(this.value)">
-          <option value="'Merriweather', serif">Merriweather</option>
-          <option value="'Playfair Display', serif">Playfair</option>
-          <option value="'Courier Prime', monospace">Typewriter</option>
-          <option value="'Caveat', cursive">Handwritten</option>
-          <option value="'Inter', sans-serif">Sans-Serif</option>
-        </select>
-      </div>` : '<div style="height:20px; background:var(--paper); border-bottom:1px solid var(--border);"></div>'}
-      
-      <div class="editor-header">
-        <input type="text" value="${ch?.title || ''}" oninput="updateTitle(this.value)" placeholder="Chapter Title" ${isReadOnly ? 'readonly' : ''}>
-        <span id="save-status" class="save-status">Saved</span>
-      </div>
-      <div class="paper-container">
-        <div class="paper" id="paper">
-          <div class="editor-content" id="editor-body" contenteditable="${!isReadOnly}" oninput="handleInput()">
-            ${ch?.contentHTML || ''}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+function renderEditor(){
+  topbar(true);
+  const c=ch(),pages=c.pages.length;
+  $('#editor').innerHTML=`
+  <aside class="sidebar ${S.sidebar?'':'closed'}" id="sidebar">
+    <div class="side-top"><button class="btn sm" data-act="back">${I.left} Library</button>
+      ${S.ro?'<span class="badge">Read only</span>':`<button class="btn sm" data-act="publish">${S.book.is_published?'Unpublish':'Publish'}</button>`}</div>
+    <div class="search"><input type="search" id="q" placeholder="Search chapters and text" aria-label="Search chapters"></div>
+    <div class="chapters" id="chlist"></div>
+    ${S.ro?'':`<div class="side-foot"><button class="btn" data-act="addch">Add chapter</button>
+      <div class="two"><button class="btn" data-act="exportjson">Backup JSON</button><button class="btn" data-act="print">Print / PDF</button></div>
+      <label class="btn">Import backup<input type="file" accept=".json,application/json" id="imp" hidden></label></div>`}
+  </aside>
+  <div class="main">
+    ${S.ro?'':`<div class="toolbar">
+      <select class="sel" id="blk" aria-label="Text style"><option value="">Style</option><option value="p">Body</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="blockquote">Quote</option></select>
+      <select class="sel" id="fnt" aria-label="Font"><option value="">Font</option><option value="Merriweather, serif">Merriweather</option><option value="'Playfair Display', serif">Playfair</option><option value="'Courier Prime', monospace">Typewriter</option><option value="Caveat, cursive">Handwritten</option><option value="Inter, sans-serif">Sans-serif</option></select>
+      <span class="sep"></span>
+      <button class="tb" data-act="cmd" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+      <button class="tb" data-act="cmd" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+      <button class="tb" data-act="cmd" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+      <span class="sep"></span>
+      ${tbtn('insertUnorderedList',I.ul,'Bulleted list')}${tbtn('insertOrderedList',I.ol,'Numbered list')}
+      <span class="sep"></span>
+      ${tbtn('justifyLeft',I.l,'Align left')}${tbtn('justifyCenter',I.c,'Align center')}${tbtn('justifyRight',I.r,'Align right')}
+      <span class="sep"></span>
+      <input type="color" id="clr" value="#1b2033" title="Text color" aria-label="Text color">
+      ${tbtn('removeFormat',I.clear,'Clear formatting')}
+      <span class="sep"></span>
+      <button class="btn sm primary" data-act="addpage">Add page</button><button class="btn sm danger" data-act="delpage">Delete page</button>
+    </div>`}
+    <div class="ch-title"><input id="title" value="${esc(c.title)}" placeholder="Chapter title" aria-label="Chapter title" ${S.ro?'readonly':''}><span class="status" id="status">Saved</span></div>
+    <div class="stage"><div class="paper"><div class="content" id="body" contenteditable="${!S.ro}" spellcheck="true"></div></div></div>
+    <div class="foot"><div class="stats" id="stats"></div>
+      <div class="pager"><button class="btn ico sm" data-act="prev" aria-label="Previous page" ${S.page===0?'disabled':''}>${I.left}</button><span>Page ${S.page+1} of ${pages}</span><button class="btn ico sm" data-act="next" aria-label="Next page" ${S.page>=pages-1?'disabled':''}>${I.right}</button></div></div>
+  </div>`;
+  $('#body').innerHTML=clean(c.pages[S.page].contentHTML);
+  S.sel=null;paintChapters();stats();
 }
 
-function execCmd(cmd, val = null) { 
-  if(isReadOnly) return; // EXTRA SAFEGUARD
-  const editor = document.getElementById('editor-body');
-  if(editor) editor.focus();
-  document.execCommand(cmd, false, val); 
+function paintChapters(filter=''){
+  const f=filter.toLowerCase();
+  $('#chlist').innerHTML=S.book.chapters.map((c,i)=>{
+    if(f){const txt=(c.title+' '+c.pages.map(p=>(p.contentHTML||'').replace(/<[^>]*>/g,' ')).join(' ')).toLowerCase();if(!txt.includes(f))return ''}
+    return `<div class="ch ${c.id===S.chId?'active':''}" data-act="selch" data-id="${esc(c.id)}" tabindex="0" ${S.ro||f?'':'draggable="true" title="Drag to reorder, or Alt+Up/Down"'}><span class="n">${i+1}</span><span class="t">${esc(c.title||'Untitled')}</span>${S.ro?'':`<button class="x" data-act="delch" data-id="${esc(c.id)}" title="Delete chapter" aria-label="Delete chapter">${I.x}</button>`}</div>`;
+  }).join('')||'<div class="empty" style="padding:20px">No matches</div>';
 }
 
-function changeFont(font) { 
-  if(isReadOnly) return;
-  const editor = document.getElementById('editor-body');
-  if(editor) editor.style.fontFamily = font; 
+/* selection handling so toolbar never loses the caret */
+document.addEventListener('selectionchange',()=>{
+  const b=$('#body'),s=getSelection();
+  if(b&&s.rangeCount&&b.contains(s.anchorNode))S.sel=s.getRangeAt(0).cloneRange();
+});
+document.addEventListener('mousedown',e=>{if(e.target.closest('.toolbar .tb'))e.preventDefault()});
+function restore(){const b=$('#body');if(!b)return false;b.focus();if(S.sel){const s=getSelection();s.removeAllRanges();s.addRange(S.sel)}return true}
+function exec(cmd,val=null,css=false){
+  if(S.ro||!restore())return;
+  if(css)document.execCommand('styleWithCSS',false,true);
+  document.execCommand(cmd,false,val);
+  if(css)document.execCommand('styleWithCSS',false,false);
+  onInput();
 }
 
-function searchText(val) {
-  val = val.toLowerCase();
-  document.querySelectorAll('.chapter-item').forEach(item => {
-    const chId = item.getAttribute('onclick').match(/'([^']+)'/)[1];
-    const chapter = activeBook.chapters.find(c => c.id === chId);
-    const textContent = (chapter.contentHTML || '').toLowerCase();
-    const title = (chapter.title || '').toLowerCase();
-    if(title.includes(val) || textContent.includes(val)) item.style.display = 'block';
-    else item.style.display = 'none';
-  });
+function stats(){
+  const t=($('#body')?.innerText||'').trim(),w=t?t.split(/\s+/).length:0;
+  const el=$('#stats');if(el)el.innerHTML=`<span><b>${w.toLocaleString()}</b> words</span><span><b>${t.length.toLocaleString()}</b> characters</span><span><b>${Math.max(w?1:0,Math.round(w/230))}</b> min read</span>`;
+}
+function setStatus(t,bad){const s=$('#status');if(s){s.textContent=t;s.className='status'+(bad?' bad':'')}}
+
+function onInput(){
+  if(S.ro)return;
+  ch().pages[S.page].contentHTML=$('#body').innerHTML;
+  stats();queueSave();
+}
+function queueSave(){S.dirty=true;setStatus('Saving…');clearTimeout(S.timer);S.timer=setTimeout(()=>{S.timer=null;save()},600)}
+async function save(){
+  if(S.ro||!S.book)return true;
+  const {error}=await db.from('books').update({chapters:S.book.chapters}).eq('id',S.book.id);
+  S.dirty=!!error;setStatus(error?'Save failed. Will retry on your next edit':'Saved',!!error);
+  return !error;
+}
+async function flush(){if(S.timer){clearTimeout(S.timer);S.timer=null;await save()}}
+addEventListener('beforeunload',e=>{if(S.timer||S.dirty){e.preventDefault();e.returnValue=''}});
+
+/* chapter / page actions */
+async function goChapter(id,page=0){await flush();S.chId=id;S.page=page;renderEditor()}
+async function addChapter(){
+  await flush();
+  const c={id:uid(),title:`Chapter ${S.book.chapters.length+1}`,position:S.book.chapters.length,pages:[{contentHTML:''}]};
+  S.book.chapters.push(c);S.chId=c.id;S.page=0;await save();renderEditor();
+}
+function deleteChapter(id){
+  if(S.book.chapters.length<=1)return toast('A book needs at least one chapter.',true);
+  const c=S.book.chapters.find(x=>x.id===id);
+  modal({title:'Delete chapter',desc:`"${c.title||'Untitled'}" will be permanently deleted.`,okText:'Delete chapter',danger:true,onOk:async()=>{
+    S.book.chapters=S.book.chapters.filter(x=>x.id!==id);S.book.chapters.forEach((x,i)=>x.position=i);
+    if(S.chId===id){S.chId=S.book.chapters[0].id;S.page=0}
+    clearTimeout(S.timer);S.timer=null;await save();renderEditor();
+  }});
+}
+async function addPage(){const c=ch();await flush();c.pages.push({contentHTML:''});S.page=c.pages.length-1;await save();renderEditor()}
+function deletePage(){
+  const c=ch();if(c.pages.length<=1)return toast('A chapter needs at least one page.',true);
+  modal({title:'Delete page',desc:`Page ${S.page+1} will be permanently deleted.`,okText:'Delete page',danger:true,onOk:async()=>{
+    c.pages.splice(S.page,1);S.page=Math.min(S.page,c.pages.length-1);
+    clearTimeout(S.timer);S.timer=null;await save();renderEditor();
+  }});
+}
+async function turn(d){const c=ch(),n=S.page+d;if(n<0||n>=c.pages.length)return;await flush();S.page=n;renderEditor()}
+
+function togglePublish(){
+  const pub=S.book.is_published;
+  modal({title:pub?'Unpublish book':'Publish book',desc:pub?'It will be removed from the public library.':'Everyone signed in will be able to read this book.',okText:pub?'Unpublish':'Publish',onOk:async()=>{
+    const {error}=await db.from('books').update({is_published:!pub}).eq('id',S.book.id);
+    if(error){toast(error.message,true);return false}
+    S.book.is_published=!pub;renderEditor();toast(pub?'Unpublished':'Published');
+  }});
 }
 
-function selectChapter(id) { activeChapterId = id; renderEditor(); }
-
-function addChapter() {
-  if(isReadOnly) return;
-  const newCh = { id: Date.now().toString(), title: `Chapter ${activeBook.chapters.length + 1}`, contentHTML: '' };
-  activeBook.chapters.push(newCh);
-  activeChapterId = newCh.id;
-  saveToCloud().then(() => renderEditor());
+/* export / import */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(S.book,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${S.book.title.replace(/[^\w\- ]+/g,'')||'book'}-backup.json`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
-
-function togglePublish() {
-  if(isReadOnly) return;
-  showModal({
-    title: activeBook.is_published ? 'Unpublish Book' : 'Publish Book',
-    desc: activeBook.is_published ? 'This will remove it from the public library.' : 'This will make it visible to everyone.',
-    okText: activeBook.is_published ? 'Unpublish' : 'Publish',
-    onOk: async () => {
-      const nextState = !activeBook.is_published;
-      await db.from('books').update({ is_published: nextState }).eq('id', activeBook.id);
-      activeBook.is_published = nextState;
-      renderEditor();
-    }
-  });
+function printBook(){
+  const body=S.book.chapters.map(c=>`<section><h2>${esc(c.title||'Untitled')}</h2>${c.pages.map(p=>`<div>${clean(p.contentHTML)}</div>`).join('')}</section>`).join('');
+  const w=window.open('','_blank');if(!w)return toast('Allow pop-ups to print or save as PDF.',true);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(S.book.title)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+  <style>body{font-family:Merriweather,serif;max-width:760px;margin:0 auto;padding:40px;line-height:1.8;color:#000}h1.t{text-align:center;font-size:2.6rem;margin:30vh 0 0}section{break-before:page}h2{font-size:1.8rem;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:20px}blockquote{border-left:3px solid #999;padding-left:14px;font-style:italic}ul{padding-left:1.6rem}ol{padding-left:1.6rem}</style></head>
+  <body><h1 class="t">${esc(S.book.title)}</h1>${body}</body></html>`);
+  w.document.close();setTimeout(()=>w.print(),500);
 }
-
-function updateTitle(val) {
-  if(isReadOnly) return;
-  const ch = activeBook.chapters.find(c => c.id === activeChapterId);
-  if(ch) { ch.title = val; debounceSave(); }
-}
-
-function handleInput() {
-  if(isReadOnly) return;
-  const ch = activeBook.chapters.find(c => c.id === activeChapterId);
-  if(ch) { ch.contentHTML = document.getElementById('editor-body').innerHTML; debounceSave(); }
-}
-
-function debounceSave() {
-  if(isReadOnly) return;
-  const status = document.getElementById('save-status');
-  if(status) status.textContent = 'Saving...';
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveToCloud, 500); 
-}
-
-async function saveToCloud() {
-  if(isReadOnly) return; // EXTRA SAFEGUARD
-  const status = document.getElementById('save-status');
-  const { error } = await db.from('books').update({ chapters: activeBook.chapters }).eq('id', activeBook.id);
-  if(status) status.textContent = error ? 'Save failed (Permission denied)' : 'Saved';
-}
-
-// ==========================================
-// 5. UTILS
-// ==========================================
-function toggleSidebar() {
-  sidebarHidden = !sidebarHidden;
-  document.getElementById('sidebar').classList.toggle('hidden', sidebarHidden);
-}
-
-function toggleFullscreen() {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-  else if (document.exitFullscreen) document.exitFullscreen();
-}
-
-function download(filename, text) {
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-  element.setAttribute('download', filename);
-  element.style.display = 'none'; document.body.appendChild(element);
-  element.click(); document.body.removeChild(element);
-}
-
-function exportJSON() {
-  download(`${activeBook.title}-backup.json`, JSON.stringify(activeBook, null, 2));
-}
-
-function exportPDF() {
-  const chaptersHTML = activeBook.chapters.sort((a,b)=>a.position-b.position).map(c => `
-    <div style="page-break-before: always;">
-      <h2>${c.title || 'Untitled'}</h2>
-      <div>${c.contentHTML}</div>
-    </div>
-  `).join('');
-
-  const html = `
-    <html><head><title>${activeBook.title}</title>
-    <style>body { font-family: 'Merriweather', serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.8; color: #000; } h1 { text-align: center; font-size: 3rem; margin-bottom: 60px; } h2 { font-size: 2rem; margin-bottom: 24px; border-bottom: 1px solid #ccc; padding-bottom: 8px; } blockquote { border-left: 3px solid #ccc; padding-left: 16px; font-style: italic; color: #555; }</style></head><body>
-      <h1>${activeBook.title}</h1>${chaptersHTML}
-    </body></html>
-  `;
-  download(`${activeBook.title}-print.html`, html);
-}
-
-function importJSON(event) {
-  if(isReadOnly) return;
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!data.chapters) throw new Error("Invalid backup file");
-      await db.from('books').update({ chapters: data.chapters }).eq('id', activeBook.id);
-      activeBook.chapters = data.chapters;
-      activeChapterId = data.chapters[0]?.id;
-      renderEditor();
-      showModal({title: 'Success', desc: 'Backup imported successfully!', okText: 'OK'});
-    } catch(err) { showModal({title: 'Error', desc: err.message, okText: 'OK'}); }
+function importJSON(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!Array.isArray(d.chapters)||!d.chapters.length)throw new Error('This file has no chapters.');
+      const imported={chapters:d.chapters.map(c=>({id:String(c.id||uid()),title:String(c.title||'Untitled'),position:c.position,
+        pages:(Array.isArray(c.pages)&&c.pages.length?c.pages:[{contentHTML:c.contentHTML||''}]).map(p=>({contentHTML:clean(p.contentHTML)}))}))};
+      normalize(imported);
+      modal({title:'Replace this book\'s content?',desc:`This replaces all current chapters with ${imported.chapters.length} from the backup.`,okText:'Replace content',danger:true,onOk:async()=>{
+        S.book.chapters=imported.chapters;S.chId=S.book.chapters[0].id;S.page=0;clearTimeout(S.timer);S.timer=null;
+        if(await save()){renderEditor();toast('Backup imported')}
+      }});
+    }catch(e){toast('Import failed: '+e.message,true)}
   };
-  reader.readAsText(file);
+  r.readAsText(file);
 }
+
+/* ============ DRAG TO REORDER CHAPTERS ============ */
+let dragId=null;
+const clearMarks=()=>document.querySelectorAll('.ch.drop-before,.ch.drop-after,.ch.dragging').forEach(n=>n.classList.remove('drop-before','drop-after','dragging'));
+function moveChapter(id,target,after){
+  if(id===target)return;
+  const a=S.book.chapters,from=a.findIndex(c=>c.id===id);if(from<0)return;
+  const [m]=a.splice(from,1);let to=a.findIndex(c=>c.id===target);if(to<0)to=a.length;if(after)to++;
+  a.splice(to,0,m);a.forEach((c,i)=>c.position=i);
+  paintChapters($('#q')?.value||'');queueSave();
+}
+document.addEventListener('dragstart',e=>{const c=e.target.closest?.('.ch');if(!c||S.ro)return;dragId=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragId);c.classList.add('dragging')});
+document.addEventListener('dragover',e=>{
+  const c=e.target.closest?.('.ch');if(!c||!dragId)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.ch.drop-before,.ch.drop-after').forEach(n=>n.classList.remove('drop-before','drop-after'));
+  const r=c.getBoundingClientRect();c.classList.add(e.clientY>r.top+r.height/2?'drop-after':'drop-before');
+});
+document.addEventListener('drop',e=>{const c=e.target.closest?.('.ch');if(!c||!dragId)return;e.preventDefault();const r=c.getBoundingClientRect();moveChapter(dragId,c.dataset.id,e.clientY>r.top+r.height/2);dragId=null;clearMarks()});
+document.addEventListener('dragend',()=>{dragId=null;clearMarks()});
+
+/* ============ READER (book view) ============ */
+function showView(v){['library','editor','reader'].forEach(n=>$('#'+n).classList.toggle('hidden',n!==v))}
+function buildLeaves(b){
+  const L=[{cover:1,title:b.title,by:b.author_email}],starts=[];
+  b.chapters.forEach((c,ci)=>{starts.push(L.length);c.pages.forEach((p,pi)=>L.push({ch:ci,title:pi===0?(c.title||'Untitled'):'',run:c.title||'Untitled',html:clean(p.contentHTML)}))});
+  return {L,starts};
+}
+function openReader(book,from){
+  const {L,starts}=buildLeaves(book);
+  R={active:true,book,from,leaves:L,starts,s:0,two:innerWidth>=900};
+  showView('reader');topbar('read');paintReader();
+}
+async function readBook(id){
+  const {data,error}=await db.from('books').select('*').eq('id',id).single();
+  if(error)return toast(error.message,true);
+  normalize(data);openReader(data,'library');
+}
+function leafHTML(l,side,idx){
+  if(!l)return `<div class="leaf ${side}"></div>`;
+  if(l.cover)return `<div class="leaf cover"><div class="cv-rule"></div><h1>${esc(l.title)}</h1>${l.by?`<p>by ${esc(l.by)}</p>`:''}</div>`;
+  return `<div class="leaf ${side}">${l.title?'':`<div class="run">${esc(l.run)}</div>`}<div class="leaf-body read">${l.title?`<h2 class="chtitle">${esc(l.title)}</h2>`:''}${l.html}</div><div class="num">${idx}</div></div>`;
+}
+function paintReader(){
+  const {leaves:L,two}=R,maxS=two?Math.floor(L.length/2):L.length-1;
+  R.s=Math.max(0,Math.min(R.s,maxS));
+  const li=two?[2*R.s-1,2*R.s]:[R.s];
+  const html=two?leafHTML(L[li[0]],'left',li[0])+leafHTML(L[li[1]],'right',li[1]):leafHTML(L[li[0]],'right',li[0]);
+  const nums=li.filter(x=>x>0&&x<L.length),cur=li.find(x=>L[x]&&!L[x].cover),curCh=cur===undefined?-1:L[cur].ch;
+  const opts=`<option value="0" ${curCh===-1?'selected':''}>Cover</option>`+R.book.chapters.map((c,i)=>`<option value="${R.starts[i]}" ${i===curCh?'selected':''}>${i+1}. ${esc(c.title||'Untitled')}</option>`).join('');
+  $('#reader').innerHTML=`<div class="rd-stage"><div class="spread">${html}</div></div>
+  <div class="rd-bar"><button class="btn sm" data-act="rprev" ${R.s===0?'disabled':''}>${I.left} Previous</button>
+  <select class="sel" id="rd-jump" aria-label="Jump to chapter">${opts}</select>
+  <span>${nums.length?`Page ${nums.join('–')} of ${L.length-1}`:'Cover'}</span>
+  <button class="btn sm" data-act="rnext" ${R.s>=maxS?'disabled':''}>Next ${I.right}</button></div>`;
+}
+function readTurn(d){R.s+=d;paintReader()}
+function closeReader(){
+  R.active=false;
+  if(R.from==='editor'&&S.book){showView('editor');topbar(true)}else showLibrary(S.tab);
+}
+addEventListener('resize',()=>{
+  if(!R.active)return;const two=innerWidth>=900;if(two===R.two)return;
+  const leaf=R.two?2*R.s:R.s;R.two=two;R.s=two?Math.ceil(leaf/2):leaf;paintReader();
+});
+
+/* ============ EVENTS ============ */
+const actions={
+  theme(){setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');$('[data-act=theme]').innerHTML=themeIcon()},
+  async logout(){await flush();db.auth.signOut()},
+  tab(el){showLibrary(el.dataset.tab)},
+  newbook:newBook,
+  open(el){openBook(el.dataset.id)},
+  rename(el){renameBook(el.dataset.id,el.dataset.title)},
+  delbook(el){deleteBook(el.dataset.id,el.dataset.title)},
+  back(){showLibrary(S.ro?'public':'private')},
+  sidebar(){S.sidebar=!S.sidebar;$('#sidebar').classList.toggle('closed',!S.sidebar)},
+  full(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.()},
+  publish:togglePublish,addch:addChapter,exportjson:exportJSON,print:printBook,
+  selch(el){goChapter(el.dataset.id)},
+  delch(el){deleteChapter(el.dataset.id)},
+  addpage:addPage,delpage:deletePage,prev(){turn(-1)},next(){turn(1)},
+  cmd(el){exec(el.dataset.cmd)},
+  read(el){readBook(el.dataset.id)},
+  readfrom(){openReader(S.book,'editor')},
+  closereader:closeReader,
+  rprev(){readTurn(-1)},rnext(){readTurn(1)}
+};
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  if(el.matches('.book')&&e.target.closest('.acts'))return;
+  e.stopPropagation();actions[el.dataset.act]?.(el);
+});
+document.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(R.active&&!t.closest?.('select,input')){
+    if(e.key==='ArrowRight')readTurn(1);
+    if(e.key==='ArrowLeft')readTurn(-1);
+    if(e.key==='Escape')closeReader();
+    return;
+  }
+  if(e.key==='Enter'&&t.matches?.('.book'))actions[t.dataset.act]?.(t);
+  if(t.matches?.('.ch')){
+    if(e.key==='Enter')goChapter(t.dataset.id);
+    if(e.altKey&&(e.key==='ArrowUp'||e.key==='ArrowDown')&&!S.ro){
+      e.preventDefault();
+      const a=S.book.chapters,i=a.findIndex(c=>c.id===t.dataset.id),j=e.key==='ArrowUp'?i-1:i+1,id=t.dataset.id;
+      if(i>=0&&j>=0&&j<a.length){moveChapter(id,a[j].id,j>i);setTimeout(()=>document.querySelector(`.ch[data-id="${CSS.escape(id)}"]`)?.focus(),0)}
+    }
+  }
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='body')onInput();
+  else if(t.id==='title'&&!S.ro){const c=ch();c.title=t.value;const n=$('.ch.active .t');if(n)n.textContent=t.value||'Untitled';queueSave()}
+  else if(t.id==='q')paintChapters(t.value);
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='blk'&&t.value){exec('formatBlock',t.value==='p'?'<p>':`<${t.value}>`);t.value=''}
+  else if(t.id==='fnt'&&t.value){exec('fontName',t.value,true);t.value=''}
+  else if(t.id==='clr')exec('foreColor',t.value,true);
+  else if(t.id==='imp'){importJSON(t.files[0]);t.value=''}
+  else if(t.id==='rd-jump'){const v=+t.value;R.s=R.two?Math.ceil(v/2):v;paintReader()}
+});
+/* paste as plain text so foreign fonts and styles don't leak in */
+document.addEventListener('paste',e=>{
+  if(!e.target.closest?.('#body')||S.ro)return;
+  e.preventDefault();
+  document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));
+});
+paintAuth();
 </script>
 </body>
 </html>
